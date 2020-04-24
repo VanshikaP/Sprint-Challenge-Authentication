@@ -31,7 +31,7 @@ describe('server', function(){
                         // should return the status 200
                         expect(res.status).toBe(200);
 
-                        // should return the message - Registration Successfully
+                        // should return the message - Registration Successful
                         expect(res.body.message).toBe('Registration successful');
 
                         // should return the username
@@ -85,6 +85,7 @@ describe('server', function(){
                     .post('/api/auth/login')
                     .send({password: testdata.password})
                     .then(res => {
+                        expect(res.status).toBe(400);
                         expect(res.body.message).toBe('Please provide username and password to login');
                     });
             });
@@ -93,6 +94,7 @@ describe('server', function(){
                     .post('/api/auth/login')
                     .send({username: 'test'})
                     .then(res => {
+                        expect(res.status).toBe(400);
                         expect(res.body.message).toBe('Please provide username and password to login');
                     });
             });
@@ -100,5 +102,38 @@ describe('server', function(){
         
     });
 
-
+    describe('/api/jokes', function() {
+        it('should return the list of jokes', async function() {
+            const token = await request(server)
+                .post('/api/auth/login')
+                .send({username: `test ${test_count}`, password: testdata.password})
+                .then(res => {
+                    return res.body.token;
+                });
+            return request(server)
+                .get('/api/jokes')
+                .set('authorization', token)
+                .then(res => {
+                    expect(res.status).toBe(200);
+                    expect(res.body).toHaveLength(20);
+                });
+        });
+        it('should return error message when token is invalid', async function() {
+            return request(server)
+                .get('/api/jokes')
+                .set('authorization', 'xyz')
+                .then(res => {
+                    expect(res.status).toBe(401);
+                    expect(res.body.you).toBe('shall not pass!');
+                });
+        });
+        it('should return error when token is missing', function() {
+            return request(server)
+                .get('/api/jokes')
+                .then(res => {
+                    expect(res.status).toBe(401);
+                    expect(res.body.message).toBe('Please login to access this page');
+                });
+        });
+    });
 })
